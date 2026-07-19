@@ -36,7 +36,7 @@ jobs:
 
           echo "🔐 正在将目标私库克隆到本地的专有工作区..."
           # 将目标私库直接克隆到当前环境下的 'repo_live' 文件夹中
-          git clone https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git repo_live
+          git clone https://${{ secrets.LIVE_TOKEN }}@github.com/yubyes23/lives.git repo_live
 
           echo "🚀 开始针对私库进行定向深度清理及合并..."
           # 运行脚本
@@ -54,5 +54,5 @@ jobs:
             # 🚨 已安全移除 [skip ci]，保证能够触发私库的 Pages 快照更新工作流
             git commit -m "📊 组播源自动深度清理并重新合成 (私库就地同步)"
             # 此时无需强推，正常增量 push 即可，绝对不会影响或覆盖酒店源等其他文件
-            git push https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git main
+            git push https://${{ secrets.LIVE_TOKEN }}@github.com/yubyes23/lives.git main
           fi

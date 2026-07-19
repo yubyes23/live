@@ -34,7 +34,7 @@ jobs:
           git config --global core.quotepath false
 
           # 2. 将目标私库直接克隆到本地的 'repo_live' 文件夹中
-          git clone https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git repo_live
+          git clone https://${{ secrets.LIVE_TOKEN }}@github.com/yubyes23/lives.git repo_live
 
       - name: 📡 运行 Hotel 抓取并将结果写入私库
         run: |
@@ -61,5 +61,5 @@ jobs:
             # 🚨 已安全移除 [skip ci]，确保私库收到最新源后能自动刷新 Pages
             git commit -m "📊 组播与酒店源多源自动化同步"
             # 安全地用常规 push 增量同步回私库，不带 --force，不会覆盖你的其他生存测速等文件
-            git push https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git main
+            git push https://${{ secrets.LIVE_TOKEN }}@github.com/yubyes23/lives.git main
           fi

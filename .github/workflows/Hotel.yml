@@ -36,7 +36,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global core.quotepath false
-          git clone https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git repo_live
+          git clone https://${{ secrets.LIVE_TOKEN }}@github.com/yubyes23/lives.git repo_live
           echo "::endgroup::"
 
       - name: 5. 📡 运行脚本一：C 段深度扫描与爆破
@@ -90,8 +90,8 @@ jobs:
             
             # 🚨 核心配置：在 push 之前瞬间进行一次变基拉取，完美化解因私库同步静态页面等可能导致的版本冲突
             echo "🔄 正在尝试拉取远端最新提交并解决潜在冲突..."
-            git pull https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git main --rebase
+            git pull https://${{ secrets.LIVE_TOKEN }}@github.com/yubyes23/lives.git main --rebase
             
             echo "🚀 正在推送最新洗版及测速结果到私库..."
-            git push https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git main
+            git push https://${{ secrets.LIVE_TOKEN }}@github.com/yubyes23/lives.git main
           fi

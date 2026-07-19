@@ -1,0 +1,58 @@
+name: 组播 (私库定向清理与同步)
+
+on:
+  schedule:
+    # 每 8 小时整点触发一次
+    - cron: '40 */8 * * *' 
+  workflow_dispatch: # 支持随时手动点击运行
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出当前工作流公共库代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装基础依赖
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests
+
+      - name: 📡 运行私库定向清洗与重组脚本
+        env:
+          # 传递 Token 供工作流环境或者后续 Git 推流使用
+          LIVE_TOKEN: ${{ secrets.LIVE_TOKEN }}
+        run: |
+          echo "📥 正在初始化 Git 机器人身份..."
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global core.quotepath false
+
+          echo "🔐 正在将目标私库克隆到本地的专有工作区..."
+          # 将目标私库直接克隆到当前环境下的 'repo_live' 文件夹中
+          git clone https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git repo_live
+
+          echo "🚀 开始针对私库进行定向深度清理及合并..."
+          # 运行脚本
+          python py/cleanup_zubo.py
+
+          echo "📤 检查私库 zubo/ 目录变更并推回..."
+          cd repo_live
+          
+          # 仅把 zubo 目录的所有变化（包含删除、新增）加入暂存区
+          git add zubo/
+          
+          if git diff --staged --quiet; then
+            echo "ℹ️ 私库组播源内容没有任何变化，跳过推送。"
+          else
+            # 🚨 已安全移除 [skip ci]，保证能够触发私库的 Pages 快照更新工作流
+            git commit -m "📊 组播源自动深度清理并重新合成 (私库就地同步)"
+            # 此时无需强推，正常增量 push 即可，绝对不会影响或覆盖酒店源等其他文件
+            git push https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git main
+          fi

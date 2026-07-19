@@ -1,0 +1,97 @@
+name: Hotel IPTV Pipeline (Scan -> Rebuild -> Traffic Test)
+
+on:
+  schedule:
+    # 设定每 12 小时全自动跑一次完整的爆破、洗版和测速流程
+    - cron: '20 */6 * * *'
+  workflow_dispatch: # 允许您在 GitHub 网页上随时手动点击运行
+
+# 💡 在全局开启 Python 无缓存模式，强制所有 Python 脚本实时吐出日志
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  pipeline_job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. 检出当前公共库代码
+        uses: actions/checkout@v4
+
+      - name: 2. 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 3. 安装脚本基础依赖
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests urllib3
+
+      - name: 4. 🔐 准备私库运行空间
+        env:
+          LIVE_TOKEN: ${{ secrets.LIVE_TOKEN }}
+        run: |
+          echo "::group::📥 正在拉取私库 lives..."
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global core.quotepath false
+          git clone https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git repo_live
+          echo "::endgroup::"
+
+      - name: 5. 📡 运行脚本一：C 段深度扫描与爆破
+        run: |
+          echo "========================================="
+          echo "🚀 Step 1: 启动酒店源存活检测与 C 段网络爆破..."
+          echo "========================================="
+          echo "::group::🔍 点击展开：查看实时爆破与探测日志"
+          python py/hotel_scan.py
+          echo "::endgroup::"
+
+      - name: 6. 🌟 运行脚本二：规范化清洗与多 M3U 洗版重建
+        run: |
+          echo "========================================="
+          echo "🚀 Step 2: 启动台名清洗并就地重构 M3U 独立节点与总表..."
+          echo "========================================="
+          echo "::group::📝 点击展开：查看洗版生成文件明细"
+          python py/rebuild.py
+          echo "::endgroup::"
+
+      - name: 7. 📊 运行脚本三：实际网络吞吐与带宽流量测速
+        run: |
+          echo "========================================="
+          echo "🚀 Step 3: 提取 ALL.m3u 总表样本，启动流媒体吞吐压测..."
+          echo "========================================="
+          echo "::group::⚡ 点击展开：查看每个频道的 Mbps 测速详情"
+          python py/traffic_test.py
+          echo "::endgroup::"
+
+      - name: 8. 🚀 检查所有生成文件的变动，并精确安全同步回私库
+        env:
+          LIVE_TOKEN: ${{ secrets.LIVE_TOKEN }}
+        run: |
+          cd repo_live
+          
+          # 🚨 核心配置：在操作前先声明 rebase 策略，防止 actions 报错
+          git config pull.rebase true
+          
+          git add hotel_output.txt hotels/ traffic_report.txt traffic_summary.json
+          
+          if git diff --staged --quiet; then
+            echo "ℹ️ 数据大表、洗版目录及测速报告无任何内容变动，跳过推送。"
+          else
+            echo "========================================="
+            echo "⚡ 检查到内容更新，查看变更文件列表："
+            echo "========================================="
+            git status --short
+            
+            # 🚨 已安全移除 [skip ci]，用于同步拉起云端静态大表快照生成
+            git commit -m "⚙️ 自动化流水线：爆破+洗版+测速结果同步更新"
+            
+            # 🚨 核心配置：在 push 之前瞬间进行一次变基拉取，完美化解因私库同步静态页面等可能导致的版本冲突
+            echo "🔄 正在尝试拉取远端最新提交并解决潜在冲突..."
+            git pull https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git main --rebase
+            
+            echo "🚀 正在推送最新洗版及测速结果到私库..."
+            git push https://${{ secrets.LIVE_TOKEN }}@github.com/hohao234/lives.git main
+          fi
